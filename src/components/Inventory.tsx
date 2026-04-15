@@ -257,12 +257,14 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
     
     try {
       const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv');
+      const isPDF = file.name.toLowerCase().endsWith('.pdf');
       
       const reader = new FileReader();
       reader.onload = async () => {
         try {
           let prompt = `Analiza este archivo de inventario/catálogo y extrae todos los productos con sus precios (Detal/Mayor), materiales y cualquier recargo por talla o diseño.`;
           let attachment: string | undefined = undefined;
+          let options: any = { module: 'inventory' };
 
           if (isExcel) {
             setScanStep(2); // Identificando patrones...
@@ -272,14 +274,20 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
             const worksheet = workbook.Sheets[firstSheetName];
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
             
+            console.log("[Inventory] Excel JSON Data:", jsonData);
             prompt += `\n\nDATOS EXTRAÍDOS DEL EXCEL:\n${JSON.stringify(jsonData, null, 2)}`;
-            // No enviamos "attachment" (imagen) si es Excel, enviamos los datos en el prompt
+          } else if (isPDF) {
+            attachment = reader.result as string;
+            options.mimeType = "application/pdf";
+            console.log("[Inventory] PDF detected, size:", attachment.length);
           } else {
             attachment = reader.result as string;
+            console.log("[Inventory] Image detected, size:", attachment.length);
           }
 
+          console.log("[Inventory] Calling AI with prompt length:", prompt.length);
           // Ejecución a través del puente seguro
-          const result = await callRoxtorAI(prompt, attachment, { module: 'inventory' });
+          const result = await callRoxtorAI(prompt, attachment, options);
           
           if (result.error) {
             throw new Error(result.suggested_reply || "Error en el análisis de IA");
@@ -309,6 +317,7 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
       if (isExcel) {
         reader.readAsArrayBuffer(file);
       } else {
+        // Imágenes y PDFs se leen como DataURL para obtener el base64 limpio
         reader.readAsDataURL(file);
       }
     } catch (err) {

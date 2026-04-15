@@ -183,10 +183,12 @@ apiRouter.post(["/ai/analyze", "/ai/analize"], async (req, res) => {
     // Si se especifica un módulo, usamos el correspondiente
     let result;
     try {
+      const mimeType = req.body.mimeType || "image/jpeg";
       if (module === 'audit') {
         result = await auditAI(prompt, image);
       } else if (module === 'inventory') {
-        result = await inventoryAI(prompt, image);
+        // Pasamos el mimeType detectado para PDFs
+        result = await runAI(prompt, ROXTOR_SYSTEM_INSTRUCTIONS, image, mimeType);
       } else if (module === 'report') {
         result = await reportAI(prompt, image);
       } else {
