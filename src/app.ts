@@ -8,6 +8,7 @@ import { inventoryAI } from "./ai/inventory";
 import { reportAI } from "./ai/report";
 import { detectModule } from "./ai/detectModule";
 import { runAI } from "./ai/aiserver";
+import { ROXTOR_SYSTEM_INSTRUCTIONS } from "./constants/systemInstructions";
 
 import path from "path";
 
@@ -301,13 +302,12 @@ apiRouter.post("/webhook", async (req, res) => {
   }
 });
 
-// Montar el router en ambos prefijos para máxima compatibilidad con redirects
+// Montar el router solo en /api para evitar conflictos con el frontend
 app.use("/api", apiRouter);
-app.use("/", apiRouter);
 
 // 🔹 404 API HANDLER
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api") || req.path.includes("/ai/")) {
+  if (req.path.startsWith("/api")) {
     res.status(404).json({ 
       error: "API endpoint not found", 
       path: req.path,
